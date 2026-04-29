@@ -1,0 +1,26 @@
+{
+  "name": "soflow-fota",
+  "displayName": "SOFLOW FOTA",
+  "version": "1.0.0",
+  "description": "iOS port of the SO ONE-PLUS Cordova-based BLE FOTA tool for SOFLOW scooters",
+  "main": "index.js",
+  "scripts": {
+    "ios:add": "cordova platform add ios",
+    "ios:prepare": "cordova prepare ios",
+    "ios:build": "cordova build ios",
+    "ios:run": "cordova run ios"
+  },
+  "keywords": ["soflow", "ble", "fota", "scooter", "ecosystem:cordova"],
+  "author": "Dean",
+  "license": "Personal-Use-Only",
+  "devDependencies": {
+    "cordova-ios": "^7.1.0"
+  },
+  "cordova": {
+    "platforms": ["ios"],
+    "plugins": {
+      "cordova-plugin-ble-central": {},
+      "cordova-plugin-whitelist": {}
+    }
+  }
+}

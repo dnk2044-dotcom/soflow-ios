@@ -1,0 +1,184 @@
+# =====================================================================
+# SOFLOW FOTA — Cordova iOS unsigned-IPA build (free macOS GitHub runner)
+# =====================================================================
+#
+# What this does:
+#   - Spins up a fresh macos-latest runner (Apple silicon, Xcode pre-installed)
+#   - Installs Node + Cordova + iOS-deploy
+#   - Adds the iOS platform to the Cordova project
+#   - Builds an unsigned .app and packages it as an unsigned .ipa
+#   - Uploads the .ipa as a workflow artifact you can download from GitHub
+#
+# Why unsigned?
+#   - Apple developer signing requires either a $99/yr Apple Developer Program
+#     account (paid) or a free Apple-ID provisioning profile (which has to be
+#     done on a real Mac with Xcode). AltStore does the signing FOR YOU on the
+#     iPhone using your free Apple ID after you sideload — that is the whole
+#     point of AltStore. So we ship an UNSIGNED IPA from CI and AltStore signs
+#     it on-device. Cost to Dean: $0.
+#
+# Pricing reality check (as of 2026):
+#   - Public repos: macOS minutes are FREE / unlimited.
+#   - Private repos: 2000 free min/month for the Free GitHub plan, but macOS
+#     runners count 10x — so effectively ~200 macOS minutes free per month on
+#     a private repo. ONE build is ~6–10 min, so ~20 builds/month free.
+#   - Recommendation: keep this repo PUBLIC. The code is just a Cordova FOTA
+#     wrapper around the open BLE protocol; nothing in here is secret.
+# ---------------------------------------------------------------------
+
+name: Build iOS IPA (unsigned)
+
+on:
+  push:
+    branches: [main, master]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:        # manual "Run workflow" button in GitHub UI
+
+# Cancel any in-flight build for the same branch when a new commit lands
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios:
+    name: Cordova iOS unsigned build
+    runs-on: macos-latest
+
+    env:
+      DEVELOPER_DIR: /Applications/Xcode.app/Contents/Developer
+
+    steps:
+      # ---------------------------------------------------------------
+      # 1) Checkout source
+      # ---------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # 2) Show toolchain (debugging aid — handy when something breaks)
+      # ---------------------------------------------------------------
+      - name: Show toolchain
+        run: |
+          echo "macOS:"; sw_vers || true
+          echo "Xcode:"; xcodebuild -version || true
+          echo "Node:";  node -v || true
+          echo "npm:";   npm -v  || true
+
+      # ---------------------------------------------------------------
+      # 3) Pin Node 20 LTS (Cordova 12 supports Node 18/20)
+      # ---------------------------------------------------------------
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # ---------------------------------------------------------------
+      # 4) Install Cordova + ios-deploy globally
+      #     - cordova:    builds the project
+      #     - ios-deploy: needed for `cordova run ios` (we don't run, but
+      #                   cordova-ios checks for it during prepare)
+      #     - xcpretty:   prettier xcodebuild output
+      # ---------------------------------------------------------------
+      - name: Install Cordova toolchain
+        run: |
+          npm install -g cordova@12 ios-deploy
+          gem install xcpretty --no-document
+          cordova --version
+
+      # ---------------------------------------------------------------
+      # 5) Install local plugins/JS deps (if package.json present)
+      # ---------------------------------------------------------------
+      - name: Install local Node deps
+        run: |
+          if [ -f package.json ]; then
+            npm install
+          fi
+
+      # ---------------------------------------------------------------
+      # 6) Add iOS platform + prepare project
+      #     `cordova-ios@7` — last version that supports Xcode 15/16 cleanly.
+      #     If you ever need to bump, the pin lives here.
+      # ---------------------------------------------------------------
+      - name: Add iOS platform
+        run: |
+          cordova platform add ios@7 --no-telemetry --no-update-notifier
+          cordova prepare ios --no-telemetry
+
+      # ---------------------------------------------------------------
+      # 7) Build .app via xcodebuild (no code signing)
+      #     CODE_SIGNING_ALLOWED=NO   → don't try to sign
+      #     CODE_SIGNING_REQUIRED=NO  → don't fail because we didn't sign
+      #     We build for Generic iOS Device so we get an arm64 .app, not
+      #     a Simulator x86 build.
+      # ---------------------------------------------------------------
+      - name: Build unsigned .app
+        working-directory: platforms/ios
+        run: |
+          set -euo pipefail
+          # Find the .xcworkspace cordova generated
+          WORKSPACE=$(ls -d *.xcworkspace | head -n 1)
+          SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          echo "Workspace: $WORKSPACE | Scheme: $SCHEME"
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme    "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            PROVISIONING_PROFILE="" \
+            DEVELOPMENT_TEAM="" \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build \
+            | xcpretty && exit ${PIPESTATUS[0]}
+
+      # ---------------------------------------------------------------
+      # 8) Wrap .app into an unsigned .ipa
+      #     Standard trick: zip a folder named "Payload/" containing the .app
+      #     and rename to .ipa. AltStore accepts unsigned IPAs.
+      # ---------------------------------------------------------------
+      - name: Package unsigned IPA
+        run: |
+          set -euo pipefail
+          APP_PATH=$(find platforms/ios/build/DerivedData/Build/Products/Release-iphoneos -maxdepth 2 -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app produced — check the build step above."
+            exit 1
+          fi
+          echo "Found .app at: $APP_PATH"
+          mkdir -p out/Payload
+          cp -R "$APP_PATH" out/Payload/
+          cd out
+          zip -qry "SOFLOW-FOTA-unsigned.ipa" Payload
+          ls -lh SOFLOW-FOTA-unsigned.ipa
+
+      # ---------------------------------------------------------------
+      # 9) Upload IPA as build artifact (kept for 90 days)
+      # ---------------------------------------------------------------
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOFLOW-FOTA-unsigned-ipa
+          path: out/SOFLOW-FOTA-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 90
+
+      # ---------------------------------------------------------------
+      # 10) Also upload the dSYM for crash-symbolication if you ever need it
+      # ---------------------------------------------------------------
+      - name: Upload dSYM (debug symbols)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SOFLOW-FOTA-dSYM
+          path: platforms/ios/build/DerivedData/Build/Products/Release-iphoneos/*.dSYM
+          if-no-files-found: ignore
+          retention-days: 30

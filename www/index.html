@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1" />
+
+        <link rel="stylesheet" type="text/css" href="css/index.css" />
+        <title>BLE FOTA</title>
+    </head>
+    <body>
+        <div class="app">
+            <p style="text-align:center; padding-top: 20px;">Choose a peripheral with FOTA service</p>
+            <div id="mainPage">
+                <ul id="deviceList">
+                </ul>
+                <button id="refreshButton">Refresh</button>
+                <p id="selectedDeviceName"></p>
+                <p id="selectedDevice"></p>
+                <button id="connectButton">Connect</button>
+
+            </div>
+            <div id="detailPage">
+                <div id="FOTAService"></div>
+                <button id="startFOTAButton">Start FOTA</button>
+                <button id="disconnectButton">Disconnect</button>
+
+                <p style="font-size:25px">Set OTA Address <input type="text" id="OTAAddr" value="0x18052000" readonly="readonly"/></p>
+                <p style="font-size:25px">Select bin File <input type="file" id="selectImage"/></p>
+                <p style="font-size:25px">Select signature File<input type="file" id="selectSignature"/></p>
+                <hr />
+                <p id="ota_text" style="font-size:25px">This is a paragraph</p>
+
+
+            </div>
+        </div>
+        <script type="text/javascript" src="cordova.js"></script>
+        <script type="text/javascript" src="js/index.js"></script>
+        <script type="text/javascript">
+            app.initialize();
+        </script>
+
+    </body>
+</html>
