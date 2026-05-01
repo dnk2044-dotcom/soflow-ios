@@ -278,6 +278,11 @@ button.secondary:hover {
 .help strong { color: var(--text); }
 
 </style>
+    <meta name="theme-color" content="#0d1117">
+    <meta name="apple-mobile-web-app-title" content="SOFLOW">
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxNjFiMjIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwZDExMTciLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYiIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzJmODFmNyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzZkYjRmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiByeD0iMzYiIGZpbGw9InVybCgjZykiLz48dGV4dCB4PSI5MCIgeT0iMTA1IiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1OCIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0idXJsKCNiKSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U088L3RleHQ+PGNpcmNsZSBjeD0iMTQ4IiBjeT0iMTQ4IiByPSIxOCIgZmlsbD0iIzJmODFmNyIvPjxjaXJjbGUgY3g9IjE0OCIgY3k9IjE0OCIgcj0iMTAiIGZpbGw9IiM2ZGI0ZmYiLz48L3N2Zz4=">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9ImciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxNjFiMjIiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwZDExMTciLz48L2xpbmVhckdyYWRpZW50PjxsaW5lYXJHcmFkaWVudCBpZD0iYiIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjEiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzJmODFmNyIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzZkYjRmZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIiByeD0iMzYiIGZpbGw9InVybCgjZykiLz48dGV4dCB4PSI5MCIgeT0iMTA1IiBmb250LWZhbWlseT0iLWFwcGxlLXN5c3RlbSxzeXN0ZW0tdWksc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1OCIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0idXJsKCNiKSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+U088L3RleHQ+PGNpcmNsZSBjeD0iMTQ4IiBjeT0iMTQ4IiByPSIxOCIgZmlsbD0iIzJmODFmNyIvPjxjaXJjbGUgY3g9IjE0OCIgY3k9IjE0OCIgcj0iMTAiIGZpbGw9IiM2ZGI0ZmYiLz48L3N2Zz4=">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="app">
@@ -752,6 +757,29 @@ ui.startButton.addEventListener('click', startFOTA);
 // Init
 checkWebBluetooth();
 
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(e => console.log('SW reg failed:', e));
+    });
+}
+if (window.navigator.standalone === false) {
+    window.addEventListener('load', () => {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        if (isIOS && !sessionStorage.getItem('iosHintShown')) {
+            const hint = document.createElement('div');
+            hint.style.cssText = 'position:fixed;bottom:20px;left:20px;right:20px;background:#161b22;border:1px solid #2f81f7;border-radius:12px;padding:14px;font-size:13px;color:#e6edf3;z-index:1000;box-shadow:0 4px 16px rgba(0,0,0,0.5);';
+            hint.innerHTML = '<strong>Install as App:</strong> Tap Share button (square with arrow up), then "Add to Home Screen". <button id="dismissHint" style="margin:8px 0 0 0;padding:6px 12px;background:#2f81f7;color:#fff;border:none;border-radius:6px;cursor:pointer;width:auto;display:inline-block;">Got it</button>';
+            document.body.appendChild(hint);
+            document.getElementById('dismissHint').addEventListener('click', () => {
+                sessionStorage.setItem('iosHintShown', '1');
+                hint.remove();
+            });
+        }
+    });
+}
 </script>
 </body>
 </html>
