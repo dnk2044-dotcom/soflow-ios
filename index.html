@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>SOFLOW FOTA</title>
+    <style>
+:root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #2f81f7;
+    --accent-hover: #4493f8;
+    --success: #238636;
+    --warning: #d29922;
+    --error: #f85149;
+    --border: #30363d;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.app {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 16px;
+    padding-top: env(safe-area-inset-top, 16px);
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+header {
+    text-align: center;
+    padding: 20px 0;
+}
+
+h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--accent), #6db4ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+    color: var(--muted);
+    margin: 4px 0 0 0;
+    font-size: 14px;
+}
+
+.status {
+    margin-top: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--card);
+    font-size: 13px;
+    color: var(--muted);
+    display: inline-block;
+}
+
+.status.ok { color: var(--success); }
+.status.warn { color: var(--warning); }
+.status.err { color: var(--error); }
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.card h2 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.hint {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 16px 0;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 8px 0;
+}
+
+button.primary {
+    background: var(--accent);
+    color: white;
+}
+
+button.primary:hover, button.primary:active {
+    background: var(--accent-hover);
+}
+
+button.primary:disabled {
+    background: var(--border);
+    color: var(--muted);
+    cursor: not-allowed;
+}
+
+button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+button.secondary:hover {
+    border-color: var(--accent);
+}
+
+.device-info {
+    background: rgba(47, 129, 247, 0.1);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    word-break: break-all;
+}
+
+.file-label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.file-label input[type=file] {
+    display: block;
+    margin-top: 6px;
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.file-label input[type=file]::-webkit-file-upload-button {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    margin-right: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.optional {
+    color: var(--muted);
+    font-style: italic;
+    font-size: 12px;
+}
+
+.file-info {
+    color: var(--success);
+    font-size: 13px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    margin: -4px 0 12px 0;
+    min-height: 18px;
+}
+
+.addr-label {
+    display: block;
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+.addr-label input {
+    display: block;
+    margin-top: 6px;
+    width: 100%;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+}
+
+.progress {
+    width: 100%;
+    height: 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 16px 0;
+    border: 1px solid var(--border);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), #6db4ff);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.status-text {
+    text-align: center;
+    color: var(--text);
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14px;
+    min-height: 22px;
+    margin: 8px 0 0 0;
+}
+
+.help summary {
+    cursor: pointer;
+    padding: 8px 0;
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.help details {
+    border-bottom: 1px solid var(--border);
+    padding: 4px 0;
+}
+
+.help details:last-child { border-bottom: none; }
+
+.help p, .help li {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 6px 0;
+}
+
+.help ul {
+    padding-left: 20px;
+    margin: 6px 0;
+}
+
+.help code {
+    background: var(--bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.help strong { color: var(--text); }
+
+</style>
+</head>
+<body>
+    <div class="app">
+        <header>
+            <h1>SOFLOW FOTA</h1>
+            <p class="subtitle">Firmware Update via Web Bluetooth</p>
+            <div id="bleStatus" class="status">Web Bluetooth check...</div>
+        </header>
+
+        <section id="scanSection" class="card">
+            <h2>1. Connect Scooter</h2>
+            <p class="hint">Tap the button below, then pick your scooter from the iPhone's Bluetooth chooser. Make sure the scooter is powered on and not paired with another device.</p>
+            <button id="scanButton" class="primary">Scan + Connect</button>
+            <div id="connectedDevice" class="device-info" hidden></div>
+            <button id="disconnectButton" class="secondary" hidden>Disconnect</button>
+        </section>
+
+        <section id="otaSection" class="card" hidden>
+            <h2>2. Select Firmware</h2>
+            <label class="file-label">
+                Firmware (.bin)
+                <input type="file" id="firmwareFile" accept=".bin">
+            </label>
+            <div id="firmwareInfo" class="file-info"></div>
+
+            <label class="file-label">
+                Signature (.bin) <span class="optional">optional</span>
+                <input type="file" id="signatureFile" accept=".bin">
+            </label>
+            <div id="signatureInfo" class="file-info"></div>
+
+            <label class="addr-label">
+                OTA Address
+                <input type="text" id="otaAddress" value="0x18052000" readonly>
+            </label>
+        </section>
+
+        <section id="uploadSection" class="card" hidden>
+            <h2>3. Upload Firmware</h2>
+            <button id="startButton" class="primary" disabled>Start FOTA</button>
+            <div id="progressBar" class="progress" hidden>
+                <div id="progressFill" class="progress-fill"></div>
+            </div>
+            <p id="statusText" class="status-text"></p>
+        </section>
+
+        <section class="card help">
+            <h2>Help</h2>
+            <details>
+                <summary>Browser requirement</summary>
+                <p>iPhone Safari + Chrome do NOT support Web Bluetooth. You need <strong>Bluefy</strong> from the App Store ($2.99) — it's a WebKit browser with Web Bluetooth API enabled.</p>
+                <p>Open this URL in Bluefy: <code id="thisUrl"></code></p>
+            </details>
+            <details>
+                <summary>Connection issues</summary>
+                <ul>
+                    <li>Make sure the scooter is powered on and within 1 m of the iPhone</li>
+                    <li>The scooter must NOT already be connected to another phone or app</li>
+                    <li>If the device chooser shows nothing, force-quit Bluefy and retry</li>
+                    <li>iOS Bluetooth must be enabled (Settings -> Bluetooth)</li>
+                </ul>
+            </details>
+            <details>
+                <summary>About the protocol</summary>
+                <p>Service: 2600. Control char: 7000. Data char: 7001. SHA-256 image digest. Optional 64-byte signature. Sector-based upload (4096 bytes/sector) with NACK retransmission. See the GitHub repo for details.</p>
+            </details>
+        </section>
+    </div>
+
+    <script>
+'use strict';
+
+/* =============================================================================
+ * SOFLOW FOTA - Web Bluetooth Edition
+ * =============================================================================
+ * Direct port of the Cordova-FOTA www/js/index.js to the Web Bluetooth API.
+ * Runs in any browser with Web Bluetooth enabled. On iPhone, install Bluefy
+ * from the App Store (the only iOS browser with Web Bluetooth support).
+ *
+ * Protocol: same as native app - service 2600, control 7000, data 7001.
+ * Sector-based upload (4096 bytes/sector), seg ack, SHA-256 image digest,
+ * optional 64-byte signature. AES-encryption is at the BLE-control level
+ * for the SOFLOW BLE scooter app, not used in pure FOTA mode.
+ * ===========================================================================*/
+
+// 16-bit Bluetooth UUIDs are expanded to canonical 128-bit form:
+// 0000XXXX-0000-1000-8000-00805f9b34fb
+const FOTA_SERVICE      = 0x2600;
+const FOTA_CTRL_CHAR    = 0x7000;
+const FOTA_DATA_CHAR    = 0x7001;
+
+const FOTA_CTRL_TYPE = {
+    SIGNATURE          : 0,
+    DIGEST             : 1,
+    START_REQ          : 2,
+    START_RSP          : 3,
+    NEW_SECTOR         : 4,
+    INTEGRITY_CHECK_REQ: 5,
+    INTEGRITY_CHECK_RSP: 6,
+};
+
+const SECTOR_SIZE = 4096;
+// Web Bluetooth max MTU is typically 512 bytes including 3-byte ATT header,
+// so practical write payload is up to 509. We default to 23-4 = 19 (BLE
+// minimum), then the app upgrades when the device confirms a higher MTU.
+// On Web Bluetooth there's no explicit MTU request - it negotiates based
+// on the underlying OS BLE stack. iPhone typically settles at 185 bytes.
+let SEG_DATA_LENGTH_MAX = 182;  // safe default for iPhone Web Bluetooth
+
+// ---- DOM refs --------------------------------------------------------------
+const $ = id => document.getElementById(id);
+const ui = {
+    bleStatus       : $('bleStatus'),
+    scanButton      : $('scanButton'),
+    connectedDevice : $('connectedDevice'),
+    disconnectButton: $('disconnectButton'),
+    otaSection      : $('otaSection'),
+    uploadSection   : $('uploadSection'),
+    firmwareFile    : $('firmwareFile'),
+    firmwareInfo    : $('firmwareInfo'),
+    signatureFile   : $('signatureFile'),
+    signatureInfo   : $('signatureInfo'),
+    otaAddress      : $('otaAddress'),
+    startButton     : $('startButton'),
+    progressBar     : $('progressBar'),
+    progressFill    : $('progressFill'),
+    statusText      : $('statusText'),
+    thisUrl         : $('thisUrl'),
+};
+ui.thisUrl.textContent = location.href;
+
+// ---- State -----------------------------------------------------------------
+const state = {
+    device      : null,
+    server      : null,
+    service     : null,
+    ctrlChar    : null,
+    dataChar    : null,
+    imageData   : null,   // Uint8Array
+    imageDigest : null,   // Uint8Array (32 bytes SHA-256)
+    signature   : null,   // Uint8Array (optional, 64 bytes)
+    fotaInFlight: false,
+};
+
+// ---- Web Bluetooth feature detection ---------------------------------------
+function checkWebBluetooth() {
+    if (!('bluetooth' in navigator)) {
+        ui.bleStatus.textContent = 'Web Bluetooth NOT supported. On iPhone, use Bluefy from App Store.';
+        ui.bleStatus.className = 'status err';
+        ui.scanButton.disabled = true;
+        return false;
+    }
+    ui.bleStatus.textContent = 'Web Bluetooth ready';
+    ui.bleStatus.className = 'status ok';
+    return true;
+}
+
+// ---- Logging helpers -------------------------------------------------------
+function log(msg) {
+    console.log('[SOFLOW]', msg);
+    ui.statusText.textContent = msg;
+}
+function logErr(msg) {
+    console.error('[SOFLOW]', msg);
+    ui.statusText.textContent = 'ERROR: ' + msg;
+    ui.statusText.style.color = '#f85149';
+}
+
+// ---- Connect ---------------------------------------------------------------
+async function scanAndConnect() {
+    if (!checkWebBluetooth()) return;
+    try {
+        log('Requesting device... pick your scooter from the list');
+        // Web Bluetooth requires a service filter or acceptAllDevices=true.
+        // We use both: device must advertise the FOTA service OR show all
+        // (some scooters don't advertise the FOTA service).
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: [FOTA_SERVICE]
+        });
+        log('Connecting to ' + (device.name || device.id) + '...');
+        device.addEventListener('gattserverdisconnected', onDisconnect);
+
+        const server  = await device.gatt.connect();
+        const service = await server.getPrimaryService(FOTA_SERVICE);
+        const ctrlCh  = await service.getCharacteristic(FOTA_CTRL_CHAR);
+        const dataCh  = await service.getCharacteristic(FOTA_DATA_CHAR);
+
+        state.device   = device;
+        state.server   = server;
+        state.service  = service;
+        state.ctrlChar = ctrlCh;
+        state.dataChar = dataCh;
+
+        ui.connectedDevice.hidden       = false;
+        ui.connectedDevice.textContent  = (device.name || '(unnamed)') + ' - ' + device.id;
+        ui.disconnectButton.hidden      = false;
+        ui.scanButton.textContent       = 'Connected. Re-scan to switch device.';
+        ui.otaSection.hidden            = false;
+        ui.uploadSection.hidden         = false;
+        log('Connected. Select firmware file next.');
+    } catch (err) {
+        if (err.name === 'NotFoundError') {
+            log('No device picked. Tap Scan again to retry.');
+        } else {
+            logErr(err.message || String(err));
+        }
+    }
+}
+
+// ---- Disconnect ------------------------------------------------------------
+function disconnect() {
+    if (state.device && state.device.gatt.connected) {
+        state.device.gatt.disconnect();
+    }
+    onDisconnect();
+}
+function onDisconnect() {
+    state.device = null; state.server = null; state.service = null;
+    state.ctrlChar = null; state.dataChar = null;
+    ui.connectedDevice.hidden  = true;
+    ui.disconnectButton.hidden = true;
+    ui.scanButton.textContent  = 'Scan + Connect';
+    ui.otaSection.hidden       = true;
+    ui.uploadSection.hidden    = true;
+    log('Disconnected.');
+}
+
+// ---- File loading ----------------------------------------------------------
+async function loadFirmware(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const buf = await file.arrayBuffer();
+    state.imageData = new Uint8Array(buf);
+    // SHA-256 digest of full image (Web Crypto API available on iOS)
+    const digestBuf = await crypto.subtle.digest('SHA-256', state.imageData);
+    state.imageDigest = new Uint8Array(digestBuf);
+    ui.firmwareInfo.textContent = file.name + ' - ' + state.imageData.length +
+        ' bytes - SHA-256: ' + bufToHex(state.imageDigest).slice(0, 16) + '...';
+    updateStartButton();
+}
+async function loadSignature(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const buf = await file.arrayBuffer();
+    state.signature = new Uint8Array(buf);
+    ui.signatureInfo.textContent = file.name + ' - ' + state.signature.length + ' bytes';
+    updateStartButton();
+}
+function updateStartButton() {
+    ui.startButton.disabled = !state.imageData;
+}
+function bufToHex(buf) {
+    return Array.from(buf, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+// ---- FOTA upload flow ------------------------------------------------------
+async function startFOTA() {
+    if (!state.imageData) { logErr('No firmware loaded.'); return; }
+    if (!state.ctrlChar)  { logErr('Not connected.'); return; }
+    if (state.fotaInFlight) { logErr('FOTA already in progress.'); return; }
+    state.fotaInFlight = true;
+    ui.startButton.disabled = true;
+    ui.progressBar.hidden = false;
+    ui.progressFill.style.width = '0%';
+    log('Starting FOTA...');
+
+    // Set up notification listener on the control characteristic
+    state.ctrlChar.removeEventListener('characteristicvaluechanged', onCtrlNotify);
+    await state.ctrlChar.startNotifications();
+    state.ctrlChar.addEventListener('characteristicvaluechanged', onCtrlNotify);
+
+    try {
+        // Step 1: send signature (4 frames of 18 bytes each, if signature present)
+        if (state.signature) {
+            log('Sending signature...');
+            for (let i = 0; i < 4; i++) {
+                const cmd = new Uint8Array(18);
+                cmd[0] = FOTA_CTRL_TYPE.SIGNATURE;
+                cmd[1] = i;
+                cmd.set(state.signature.slice(16*i, 16*(i+1)), 2);
+                await ctrlWrite(cmd);
+            }
+        }
+
+        // Step 2: send image digest (2 frames of 18 bytes each)
+        log('Sending digest...');
+        for (let i = 0; i < 2; i++) {
+            const cmd = new Uint8Array(18);
+            cmd[0] = FOTA_CTRL_TYPE.DIGEST;
+            cmd[1] = i;
+            cmd.set(state.imageDigest.slice(16*i, 16*(i+1)), 2);
+            await ctrlWrite(cmd);
+        }
+
+        // Step 3: start request - triggers START_RSP notification
+        log('Sending start request...');
+        const otaAddr = parseInt(ui.otaAddress.value, 16);
+        const startCmd = new Uint8Array(13);
+        startCmd[0] = FOTA_CTRL_TYPE.START_REQ;
+        const view = new DataView(startCmd.buffer);
+        view.setUint32(1, otaAddr,                 true);
+        view.setUint32(5, state.imageData.length,  true);
+        view.setUint32(9, SEG_DATA_LENGTH_MAX,     true);
+        await ctrlWrite(startCmd);
+        // Image upload is triggered when START_RSP arrives via onCtrlNotify
+    } catch (err) {
+        logErr(err.message || String(err));
+        state.fotaInFlight = false;
+        ui.startButton.disabled = false;
+    }
+}
+
+async function onCtrlNotify(event) {
+    const data = new Uint8Array(event.target.value.buffer);
+    const type = data[0];
+    if (type === FOTA_CTRL_TYPE.START_RSP) {
+        if (data[1] === 0) {
+            log('Start ACK. Uploading image...');
+            await sendImage();
+        } else {
+            logErr('Start request rejected with status ' + data[1]);
+            state.fotaInFlight = false;
+            ui.startButton.disabled = false;
+        }
+    } else if (type === FOTA_CTRL_TYPE.INTEGRITY_CHECK_RSP) {
+        if (data[1] === 0) {
+            log('FOTA complete - image verified ok!');
+            ui.statusText.style.color = '#238636';
+            ui.progressFill.style.width = '100%';
+        } else {
+            logErr('Integrity check failed: status ' + data[1]);
+        }
+        state.fotaInFlight = false;
+        ui.startButton.disabled = false;
+        // Optional: disconnect after success
+        setTimeout(() => disconnect(), 1500);
+    } else {
+        console.warn('[SOFLOW] Unknown ctrl notification type:', type, data);
+    }
+}
+
+async function sendImage() {
+    const ackBufLen = Math.ceil(Math.ceil(SECTOR_SIZE / SEG_DATA_LENGTH_MAX) / 8);
+    const sectorMax = Math.ceil(state.imageData.length / SECTOR_SIZE);
+
+    for (let sectorIdx = 0; sectorIdx < sectorMax; sectorIdx++) {
+        // Slice + pad last sector to SECTOR_SIZE with 0xFF
+        let sectorData;
+        if (sectorIdx === sectorMax - 1) {
+            sectorData = state.imageData.slice(SECTOR_SIZE * sectorIdx);
+            if (sectorData.length < SECTOR_SIZE) {
+                const padded = new Uint8Array(SECTOR_SIZE).fill(0xFF);
+                padded.set(sectorData);
+                sectorData = padded;
+            }
+        } else {
+            sectorData = state.imageData.slice(SECTOR_SIZE * sectorIdx, SECTOR_SIZE * (sectorIdx + 1));
+        }
+
+        // Send NEW_SECTOR command
+        const newSectorCmd = new Uint8Array(3);
+        newSectorCmd[0] = FOTA_CTRL_TYPE.NEW_SECTOR;
+        new DataView(newSectorCmd.buffer).setUint16(1, sectorIdx, true);
+        await ctrlWrite(newSectorCmd);
+
+        // Send segments + read ACK loop with NACK retransmit
+        const totalSegs = Math.ceil(SECTOR_SIZE / SEG_DATA_LENGTH_MAX);
+        let allAcked = false;
+        let attempts = 0;
+        while (!allAcked && attempts < 5) {
+            attempts++;
+            let segIdx = 0;
+            let ack = new Uint8Array(ackBufLen);
+            // Walk through segments. Skip already-ACKed (bit set).
+            while (segIdx < totalSegs) {
+                if (ack[segIdx >> 3] & (1 << (segIdx & 7))) { segIdx++; continue; }
+                const isLast = segIdx === totalSegs - 1;
+                let dataLen;
+                if (isLast) {
+                    const rem = SECTOR_SIZE % SEG_DATA_LENGTH_MAX;
+                    dataLen = rem ? rem : SEG_DATA_LENGTH_MAX;
+                } else {
+                    dataLen = SEG_DATA_LENGTH_MAX;
+                }
+                const seg = new Uint8Array(dataLen + 1);
+                seg[0] = segIdx;
+                seg.set(sectorData.slice(SEG_DATA_LENGTH_MAX * segIdx,
+                                         SEG_DATA_LENGTH_MAX * segIdx + dataLen), 1);
+                try {
+                    if (state.dataChar.writeValueWithoutResponse) {
+                        await state.dataChar.writeValueWithoutResponse(seg);
+                    } else {
+                        // Older browsers / Bluefy versions
+                        await state.dataChar.writeValue(seg);
+                    }
+                } catch (e) {
+                    console.warn('Write failed seg', segIdx, e);
+                    // Retry a few times
+                    await sleep(50);
+                    continue;
+                }
+                segIdx++;
+            }
+            // Read ACK
+            await sleep(30);
+            try {
+                const ackVal = await state.dataChar.readValue();
+                ack = new Uint8Array(ackVal.buffer);
+                allAcked = checkAllAcked(ack, totalSegs, ackBufLen);
+            } catch (e) {
+                console.warn('ACK read failed', e);
+                allAcked = false;
+            }
+            if (!allAcked) {
+                console.log('Sector', sectorIdx, 'not all ACKed, attempt', attempts, 'ack:', Array.from(ack));
+            }
+        }
+        if (!allAcked) {
+            logErr('Sector ' + sectorIdx + ' failed after 5 attempts.');
+            state.fotaInFlight = false;
+            ui.startButton.disabled = false;
+            return;
+        }
+
+        // Update progress
+        const pct = Math.round((sectorIdx + 1) / sectorMax * 100);
+        ui.progressFill.style.width = pct + '%';
+        log('Progress: ' + pct + '% (sector ' + (sectorIdx + 1) + ' of ' + sectorMax + ')');
+    }
+
+    // All sectors uploaded - send INTEGRITY_CHECK_REQ
+    log('Upload done. Verifying...');
+    const integrityReq = new Uint8Array(1);
+    integrityReq[0] = FOTA_CTRL_TYPE.INTEGRITY_CHECK_REQ;
+    await ctrlWrite(integrityReq);
+    // Response handled by onCtrlNotify
+}
+
+function checkAllAcked(ack, totalSegs, ackBufLen) {
+    for (let i = 0; i < ackBufLen; i++) {
+        if (i === ackBufLen - 1) {
+            const rem = totalSegs % 8;
+            if (rem !== 0) {
+                const expected = (1 << rem) - 1;
+                if ((ack[i] & expected) !== expected) return false;
+                continue;
+            }
+        }
+        if (ack[i] !== 0xFF) return false;
+    }
+    return true;
+}
+
+async function ctrlWrite(data) {
+    if (state.ctrlChar.writeValueWithResponse) {
+        await state.ctrlChar.writeValueWithResponse(data);
+    } else {
+        await state.ctrlChar.writeValue(data);
+    }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ---- Wire up UI ------------------------------------------------------------
+ui.scanButton.addEventListener('click', scanAndConnect);
+ui.disconnectButton.addEventListener('click', disconnect);
+ui.firmwareFile.addEventListener('change', loadFirmware);
+ui.signatureFile.addEventListener('change', loadSignature);
+ui.startButton.addEventListener('click', startFOTA);
+
+// Init
+checkWebBluetooth();
+
+</script>
+</body>
+</html>
